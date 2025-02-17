@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Check PR Title
         id: check-title
         run: |
@@ -25,16 +28,18 @@ jobs:
       - name: Check Commit Messages
         id: check-commits
         run: |
-          # Get all commits in the PR
-          git fetch origin ${{ github.event.pull_request.head.ref }}
+          # Fetch the PR refs
+          git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-branch
 
-          COMMITS=$(git log --pretty=format:"%s" ${{ github.event.pull_request.base.ref }}..${{ github.event.pull_request.head.ref }})          
+          # Get the base branch name
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+          echo "Base branch is: $BASE_BRANCH"
 
-          # Print out all commits
-          echo "All commits in this PR:"
-          echo "======================="
-          echo "$COMMITS"
-          echo "======================="
+          # Get commit messages
+          echo "Getting commits between origin/$BASE_BRANCH and pr-branch"
+          COMMITS=$(git log origin/$BASE_BRANCH..pr-branch --format=%s)
+          echo "Commits to check:"
+          echo "$COMMITS"     
 
           # Initialize variables
           FAILED=false
