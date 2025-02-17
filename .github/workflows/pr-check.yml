@@ -28,7 +28,8 @@ jobs:
           # Get all commits in the PR 
           git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-branch
 
-          COMMITS=$(git log --format=%s origin/${{ github.event.pull_request_base.ref }}..pr-branch)
+          # Fixed: github.event.pull_request_base.ref to github.event.pull_request.base.ref
+          COMMITS=$(git log --format=%s origin/${{ github.event.pull_request.base.ref }}..pr-branch)
 
           # Initialize variables
           FAILED=false
@@ -37,19 +38,22 @@ jobs:
           PATTERN="^(feat|fix|docs|style|refactor|test|chore)(\([a-z-]+\))?: .+"
 
           while IFS= read -r COMMIT; do
-            if [[ ! -z "$commit" ]] && [[ ! "$COMMIT" =~ $PATTERN ]]; then
+            # Fixed: "$commit" to "$COMMIT" in the first condition
+            if [[ ! -z "$COMMIT" ]] && [[ ! "$COMMIT" =~ $PATTERN ]]; then
               FAILED=true
               INVALID_COMMITS="$INVALID_COMMITS\n$COMMIT"
             fi
           done <<< "$COMMITS"
 
-          if [ "$FAILED" = true ] then 
+          # Fixed: syntax error in if statement, added semicolon or newline
+          if [ "$FAILED" = true ]; then 
             echo "Invalid commits found:"
             echo -e "$INVALID_COMMITS"
             echo "invalid_commits<<EOF" >> $GITHUB_OUTPUT
             echo -e "$INVALID_COMMITS" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
-            exit
+            # Fixed: added exit code 1 for failure
+            exit 1
           fi
 
       - name: Close PR and Send Notification
