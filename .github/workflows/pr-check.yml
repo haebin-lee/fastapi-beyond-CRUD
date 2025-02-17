@@ -70,6 +70,7 @@ jobs:
         if: failure()
         run: |
           # Use the existing mail configuration from the project
+
           # python src/notify.py \
           #   --subject "PR Check Failed: Non-conforming Commit Messages" \
           #   --body "PR #${{ github.event.pull_request.number }} has been closed due to non-conforming commit messages.\n\nInvalid commits:\n${{ steps.check-commits.outputs.invalid_commits }}"
