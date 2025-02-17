@@ -25,11 +25,16 @@ jobs:
       - name: Check Commit Messages
         id: check-commits
         run: |
-          # Get all commits in the PR 
-          git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-branch
+          # Get all commits in the PR
+          git fetch origin ${{ github.event.pull_request.head.ref }}
 
-          # Fixed: github.event.pull_request_base.ref to github.event.pull_request.base.ref
-          COMMITS=$(git log --format=%s origin/${{ github.event.pull_request.base.ref }}..pr-branch)
+          COMMITS=$(git log --pretty=format:"%s" ${{ github.event.pull_request.base.ref }}..${{ github.event.pull_request.head.ref }})          
+
+          # Print out all commits
+          echo "All commits in this PR:"
+          echo "======================="
+          echo "$COMMITS"
+          echo "======================="
 
           # Initialize variables
           FAILED=false
