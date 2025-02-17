@@ -1,0 +1,80 @@
+name: PR Conventional Commit Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+    # Use the same environment variables from docker-compose
+    env:
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_FROM: ${MAIL_FROM}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Get PR Commits
+        id: get-commits
+        run: |
+          PR_COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].messageHeadline')
+          echo "commits=$PR_COMMITS" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Commit Messages
+        id: check-commits
+        run: |
+          validate_message() {
+            local message="$1"
+            local pattern="^(feat|fix|docs|style|refactor|test|chore)(\([a-z]+\))?: .+"
+            
+            if [[ $message =~ $pattern ]]; then
+              return 0
+            else
+              return 1
+            fi
+          }
+
+          failed=false
+          invalid_commits=""
+
+          echo "${{ steps.get-commits.outputs.commits }}" | while read -r commit; do
+            if ! validate_message "$commit"; then
+              failed=true
+              invalid_commits="$invalid_commits\n- $commit"
+            fi
+          done
+
+          if [ "$failed" = true ]; then
+            echo "Invalid commit messages found:$invalid_commits"
+            echo "failed=true" >> $GITHUB_OUTPUT
+            echo "invalid_commits=$invalid_commits" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Close PR and Send Notification
+        if: failure()
+        run: |
+          # Use the existing mail configuration from the project
+          # python src/notify.py \
+          #   --subject "PR Check Failed: Non-conforming Commit Messages" \
+          #   --body "PR #${{ github.event.pull_request.number }} has been closed due to non-conforming commit messages.\n\nInvalid commits:\n${{ steps.check-commits.outputs.invalid_commits }}"
+
+          # Close the PR
+          gh pr close ${{ github.event.pull_request.number }} --comment "PR is being closed due to non-conforming commit messages. Please ensure all commits follow the Conventional Commits specification."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
