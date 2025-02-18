@@ -66,9 +66,20 @@ jobs:
             exit 1
           fi
 
+      - name: Success Notification
+        if: success()
+        run: |
+          python -m src.notify \
+            --subject "PR Check Passed: Conforming Commit Messages" \
+            --body "PR #${{ github.event.pull_request.number }} has passed the commit message check."
+
       - name: Close PR and Send Notification
         if: failure()
         run: |
           gh pr close ${{ github.event.pull_request.number }} --comment "PR is being closed because the title does not follow the Conventional Commits specification. Please rename your PR to follow the format: type(scope): description"
+
+          python -m src.notify \
+            --subject "PR Check Failed: Non-conforming Commit Messages" \
+            --body "PR #${{ github.event.pull_request.number }} has been closed due to non-conforming commit messages."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
