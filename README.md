@@ -107,3 +107,5 @@ nightly-build.yml:
 
 - GitHub Actions that test and build this project at midnight every day and push this image to GitHub container registry.
 - If there's a failure, it sends an email notification.
+
+- Wrong commit
