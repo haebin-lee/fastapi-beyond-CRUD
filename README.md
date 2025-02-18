@@ -98,7 +98,12 @@ I welcome contributions to improve the documentation! You can contribute [here](
 
 ## Github Actions
 
-pr-check.yml
+pr-check.yml:
 
-- Github Actions that verify the PR title and commit message that follows the Conventional Commits during PR creation.
-- If there's a failure, it sends a notification
+- GitHub Actions that verify the PR title and commit message follow the Conventional Commits format during PR creation.
+- If there's a failure, it sends an email notification.
+
+nightly-build.yml:
+
+- GitHub Actions that test and build this project at midnight every day and push this image to GitHub container registry.
+- If there's a failure, it sends an email notification.
