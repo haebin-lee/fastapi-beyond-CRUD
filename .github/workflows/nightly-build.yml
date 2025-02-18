@@ -2,68 +2,70 @@ name: Nightly Build
 
 on:
   schedule:
-    # Runs at 12:00 AM UTC every day
     - cron: "0 0 * * *"
-  workflow_dispatch: # allow manual triggering of the workflow
-  push:
+  workflow_dispatch: # Allow manual triggering of the workflow
+  push: # Trigger on any commit to any branch
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     services:
+      # Add PostgreSQL service
       db:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_DB: bookly
           POSTGRES_PASSWORD: testpass
-
+          POSTGRES_DB: bookly
         ports:
           - 5432:5432
 
+      # Add Redis service
       redis:
         image: redis:6
         ports:
           - 6379:6379
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest pytest-asyncio pytest-cov
-        pip install celery
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Run tests
-      run: |
-        pytest --cov=./ --cov-report=xml
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+          pip install celery
 
-    - name: Login to Github Container Registry
-      if: success()
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ secrets.GITHUB_USERNAME }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run tests
+        run: |
+          pytest --cov=./ --cov-report=xml
 
-    - name: Set up Docker Buildx
-      if: success()
-      uses: docker/setup-buildx-action@v2
+      - name: Login to GitHub Container Registry
+        if: success()
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and push Docker image
-      if: success()
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ghcr.io/${{ github.repository_owner }}/bookly:nightly
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Set up Docker Buildx
+        if: success()
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image
+        if: success()
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/bookly:nightly
+            ghcr.io/${{ github.repository_owner }}/bookly:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
