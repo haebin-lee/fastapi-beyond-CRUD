@@ -99,3 +99,6 @@ I welcome contributions to improve the documentation! You can contribute [here](
 ## Github Actions
 
 pr-check.yml
+
+- Github Actions that verify the PR title and commit message that follows the Conventional Commits during PR creation.
+- If there's a failure, it sends a notification
