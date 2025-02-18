@@ -75,13 +75,6 @@ jobs:
             exit 1
           fi
 
-      - name: Success Notification
-        if: success()
-        run: |
-          python -m src.notify \
-            --subject "PR Check Passed: Conforming Commit Messages" \
-            --body "PR #${{ github.event.pull_request.number }} has passed the commit message check."
-
       - name: Close PR and Send Notification
         if: failure()
         run: |
